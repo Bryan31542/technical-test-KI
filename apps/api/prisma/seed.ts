@@ -1,14 +1,16 @@
 import path from 'node:path';
 import { config } from 'dotenv';
-import { Intent, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
-config({ path: path.resolve(__dirname, '../../.env') });
+// This file lives in apps/api/prisma, so ../.env is apps/api/.env
+// (the same file Prisma migrate loads).
+config({ path: path.resolve(__dirname, '../.env') });
 
 const prisma = new PrismaClient();
 
-const knowledgeBase: Array<{ intent: Intent; title: string; body: string }> = [
+const knowledgeBase = [
   {
-    intent: Intent.FECHAS_CICLOS,
+    intent: 'FECHAS_CICLOS',
     title: 'Fechas del ciclo vigente',
     body: [
       'Ciclo 2026-2:',
@@ -19,7 +21,7 @@ const knowledgeBase: Array<{ intent: Intent; title: string; body: string }> = [
     ].join('\n'),
   },
   {
-    intent: Intent.FECHAS_PAGO,
+    intent: 'FECHAS_PAGO',
     title: 'Calendario de pagos',
     body: [
       'Pagos de matrícula del ciclo 2026-2:',
@@ -30,36 +32,40 @@ const knowledgeBase: Array<{ intent: Intent; title: string; body: string }> = [
     ].join('\n'),
   },
   {
-    intent: Intent.INSCRIPCION,
+    intent: 'INSCRIPCION',
     title: 'Cómo inscribirse',
     body: [
       'Pasos generales de inscripción:',
       '1. Crear una cuenta en el portal de admisiones.',
       '2. Completar la ficha con datos personales y carrera de interés.',
-      '3. Subir DNI, certificado de estudios y foto carnet.',
+      '3. Subir DUI o pasaporte, certificado de estudios y foto carnet.',
       '4. Pagar el derecho de inscripción.',
       '5. Esperar la constancia por correo en un máximo de 5 días hábiles.',
     ].join('\n'),
   },
   {
-    intent: Intent.ADMISIONES,
+    intent: 'ADMISIONES',
     title: 'Información de admisiones',
     body: [
       'Admisiones — Facultad de Ingeniería:',
       '- Carreras: Ingeniería de Sistemas, Civil, Industrial y Electrónica.',
       '- Modalidad: presencial, con algunas asignaturas virtuales.',
-      '- Contacto: admisiones@universidad.example / +51 1 555 0100.',
+      '- Contacto: admisiones@universidad.example / +506 2222-2222.',
       '- Horario de atención: lunes a viernes, 9:00 a 18:00.',
     ].join('\n'),
   },
-];
+] as const;
 
 async function main() {
   for (const entry of knowledgeBase) {
     await prisma.knowledgeEntry.upsert({
       where: { intent: entry.intent },
       update: { title: entry.title, body: entry.body },
-      create: entry,
+      create: {
+        intent: entry.intent,
+        title: entry.title,
+        body: entry.body,
+      },
     });
   }
 

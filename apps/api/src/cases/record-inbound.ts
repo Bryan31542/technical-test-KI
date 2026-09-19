@@ -1,7 +1,6 @@
 import type { DetectedIntent } from '../intent/intent.rules';
 import { caseTypeForIntent, type CaseType } from './case-type';
-
-export type CaseStatus = 'ABIERTO' | 'EN_PROCESO' | 'CERRADO';
+import type { CaseStatus } from './case-status';
 
 export type CaseRecord = {
   id: string;

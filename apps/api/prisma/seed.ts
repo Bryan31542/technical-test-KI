@@ -50,7 +50,7 @@ const knowledgeBase = [
       'Admisiones — Facultad de Ingeniería:',
       '- Carreras: Ingeniería de Sistemas, Civil, Industrial y Electrónica.',
       '- Modalidad: presencial, con algunas asignaturas virtuales.',
-      '- Contacto: admisiones@universidad.example / +506 2222-2222.',
+      '- Contacto: admisiones@universidad.example / +503 2222-2222.',
       '- Horario de atención: lunes a viernes, 9:00 a 18:00.',
     ].join('\n'),
   },

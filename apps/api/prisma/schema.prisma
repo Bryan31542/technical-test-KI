@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CaseType {
+  CONSULTA
+  RECLAMO
+}
+
+enum CaseStatus {
+  ABIERTO
+  EN_PROCESO
+  CERRADO
+}
+
+enum Intent {
+  FECHAS_CICLOS
+  FECHAS_PAGO
+  INSCRIPCION
+  ADMISIONES
+  RECLAMO
+  DESCONOCIDA
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+model Case {
+  id         String     @id @default(uuid())
+  phone      String     @unique
+  type       CaseType
+  status     CaseStatus @default(ABIERTO)
+  lastIntent Intent
+  messages   Message[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@map("cases")
+}
+
+model Message {
+  id          String            @id @default(uuid())
+  caseId      String
+  case        Case              @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  direction   MessageDirection
+  body        String
+  providerSid String?           @unique
+  createdAt   DateTime          @default(now())
+
+  @@index([caseId, createdAt])
+  @@map("messages")
+}
+
+model KnowledgeEntry {
+  id     String @id @default(uuid())
+  intent Intent @unique
+  title  String
+  body   String
+
+  @@map("knowledge_entries")
+}

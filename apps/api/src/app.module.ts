@@ -6,6 +6,7 @@ import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { IntentModule } from './intent/intent.module';
 import { CasesModule } from './cases/cases.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { CasesModule } from './cases/cases.module';
     PrismaModule,
     IntentModule,
     CasesModule,
+    MessagingModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

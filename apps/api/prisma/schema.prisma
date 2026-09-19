@@ -32,9 +32,21 @@ enum MessageDirection {
   OUTBOUND
 }
 
+model Contact {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  cases     Case[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contacts")
+}
+
+// Open cases are limited in SQL: unique (contactId, type) WHERE status <> CERRADO
 model Case {
   id         String     @id @default(uuid())
-  phone      String     @unique
+  contactId  String
+  contact    Contact    @relation(fields: [contactId], references: [id], onDelete: Cascade)
   type       CaseType
   status     CaseStatus @default(ABIERTO)
   lastIntent Intent
@@ -42,6 +54,8 @@ model Case {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
+  @@index([contactId, status])
+  @@index([contactId, type])
   @@map("cases")
 }
 

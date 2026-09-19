@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { IntentModule } from './intent/intent.module';
 import { CasesModule } from './cases/cases.module';
 import { MessagingModule } from './messaging/messaging.module';
+import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { MessagingModule } from './messaging/messaging.module';
     IntentModule,
     CasesModule,
     MessagingModule,
+    WebhookModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

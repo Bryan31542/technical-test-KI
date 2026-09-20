@@ -1,87 +1,73 @@
 # Bot de WhatsApp + panel de casos
 
-Prototipo para una universidad: un backend NestJS recibe mensajes al estilo Twilio, clasifica la intención, responde desde una base de conocimiento y abre casos. Un panel Next.js permite listar, filtrar y gestionar esos casos.
+Backend NestJS: webhook al estilo Twilio, intención por reglas, respuestas desde un seed y casos en Postgres. Frontend Next.js: listar, filtrar y gestionar esos casos.
 
-Las decisiones de alcance están en [DECISIONES.md](./DECISIONES.md).
+Cómo se decidió el alcance: [DECISIONES.md](./DECISIONES.md).
 
-## Requisitos
+## Cómo correrlo
 
-- Node.js 22 y npm
-- Docker y Docker Compose
-- Para Playwright: Chromium (`npx playwright install chromium` desde `apps/web`)
-
-## Arranque rápido (Docker Compose)
-
-Esto levanta Postgres, la API y el panel. Postgres arranca primero, la API espera a que esté sano, y el frontend espera a la API.
+Hace falta **Docker Compose** (Docker Desktop o equivalente). Node.js 22 solo si vas a correr tests o el modo local, más abajo.
 
 ```bash
+git clone <url-del-repo>
+cd <carpeta-del-repo>
 cp .env.example .env
-```
-
-Completá **`.env` en la raíz**. Es el único archivo de entorno: lo leen Compose, Nest, Prisma y Next. Un ejemplo para correr el prototipo **sin Twilio**:
-
-```env
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=casos
-POSTGRES_PORT=5432
-
-CORS_ORIGIN=http://localhost:3000
-API_PORT=8080
-WEB_PORT=3000
-NEXT_PUBLIC_API_URL=http://localhost:8080
-
-MESSAGING_DRIVER=db
-TWILIO_WHATSAPP_FROM=
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-TWILIO_CONTENT_SID=
-
-PANEL_USER=panel
-PANEL_PASSWORD_HASH=JDJiJDEwJG1pWFV4Wnh2Z1pSQkdNeHZCcm1hUWU5SnRqYzN4dzE4QUFwTERLZ1lFZFFzS3BFQmpJME8y
-```
-
-`PANEL_PASSWORD_HASH` es el bcrypt de la contraseña `panel`, en base64. Un hash crudo `$2b$…` en este archivo lo interpola Docker Compose y se rompe. La API acepta `$2b$…` o base64; para Compose usá base64. `DATABASE_URL` es opcional: si falta o todavía tiene `${…}`, la API la arma con `POSTGRES_*` hacia `localhost`. En Docker el entrypoint la reconstruye hacia el host `postgres`.
-
-Después:
-
-```bash
 docker compose up --build
 ```
 
-| Qué | URL |
+`.env.example` ya trae valores de demo. **No lo dejes con `POSTGRES_USER` vacío**: Compose no levanta Postgres.
+
+La primera vez tarda (build de las imágenes). Cuando `api` y `web` estén up:
+
+| Qué | Dónde |
 | --- | --- |
 | Panel | http://localhost:3000 |
+| Usuario / contraseña | `panel` / `panel` |
 | API | http://localhost:8080 |
 | Health | http://localhost:8080/health |
 
-Login del panel: usuario `panel` / contraseña `panel`.
+Hay un solo `.env`, en la raíz. No lo subas al repo.
 
-El entrypoint de la API corre `prisma migrate deploy` y el seed de la base de conocimiento en cada arranque. No subas archivos `.env` al repo.
+Si 3000, 8080 o 5432 están ocupados, cambiá `WEB_PORT`, `API_PORT` o `POSTGRES_PORT` en `.env`. Si Postgres ya tenía un volumen con otras credenciales: o usás esas en `.env`, o `docker compose down -v` (borra datos locales).
 
-## Variables de entorno
+## Probar el bot (sin cuenta Twilio)
 
-| Variable | Para qué |
-| --- | --- |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | Postgres en Compose y, en local, para armar `DATABASE_URL` |
-| `DATABASE_URL` | Opcional. Override de Prisma. En Docker se reconstruye hacia el host `postgres` |
-| `CORS_ORIGIN` | Origen del panel (`http://localhost:3000`) |
-| `API_PORT` / `WEB_PORT` | Puertos publicados por Compose |
-| `NEXT_PUBLIC_API_URL` | URL de la API que consume el panel. Next solo copia del `.env` las claves `NEXT_PUBLIC_*`. En la imagen del frontend se hornea en el build |
-| `MESSAGING_DRIVER` | `db` (default): persiste el saliente y no llama a Twilio. `twilio`: segunda implementación del puerto |
-| `TWILIO_*` | Solo si `MESSAGING_DRIVER=twilio` |
-| `PANEL_USER` | Usuario HTTP Basic del panel. El webhook y `/health` no piden auth |
-| `PANEL_PASSWORD_HASH` | Hash bcrypt `$2b$…` o el mismo valor en base64. Si falta, `/cases` queda abierto |
-
-Para generar otro hash, desde `apps/api` después de `npm ci`:
+Con el stack arriba:
 
 ```bash
-node -e "const bcrypt=require('bcryptjs'); const h=bcrypt.hashSync('tu-clave', 10); console.log(h); console.log(Buffer.from(h).toString('base64'))"
+curl -s -X POST http://localhost:8080/webhook/whatsapp \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'From=whatsapp:+50370000000' \
+  --data-urlencode 'Body=quiero poner un reclamo' \
+  --data-urlencode 'MessageSid=SM-prueba-1'
 ```
 
-## Desarrollo local (API y web en el host)
+El reclamo aparece en el panel. El mismo `MessageSid` otra vez no duplica el hilo.
 
-Útil para Jest, Playwright y `start:dev`. Postgres puede seguir en Docker. API y web van en **dos terminales**; `start:dev` no vuelve al prompt.
+## Tests
+
+**Jest** (no necesita Postgres):
+
+```bash
+cd apps/api
+npm ci
+npm test
+```
+
+**Playwright** (Postgres arriba, login `panel` / `panel`). Instala Chromium una vez:
+
+```bash
+cd apps/web
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+Cubre: llega un reclamo por el webhook → se ve en la lista → sigue visible con filtro `ABIERTO` → el detalle muestra el hilo.
+
+## Desarrollo local (opcional)
+
+API y web en el host, Postgres en Docker. **Dos terminales** (`start:dev` no vuelve).
 
 ```bash
 docker compose up -d postgres
@@ -100,50 +86,31 @@ npm ci
 npm run dev
 ```
 
-Los usuarios de Postgres de `.env` y del volumen de Compose tienen que coincidir: si el volumen ya se creó con otras credenciales, o bien usá esas mismas en `.env`, o borralo con `docker compose down -v` (borra datos locales).
+## Variables
 
-## Pruebas
+| Variable | Uso |
+| --- | --- |
+| `POSTGRES_*` | Usuario, clave, base y puerto de Postgres |
+| `DATABASE_URL` | Opcional. Si falta, se arma con `POSTGRES_*` |
+| `CORS_ORIGIN` | Origen del panel (`http://localhost:3000`) |
+| `API_PORT` / `WEB_PORT` | Puertos publicados por Compose |
+| `NEXT_PUBLIC_API_URL` | URL de la API. Next solo lee claves `NEXT_PUBLIC_*` |
+| `MESSAGING_DRIVER` | `db` (default) o `twilio` |
+| `TWILIO_*` | Solo si `MESSAGING_DRIVER=twilio` |
+| `PANEL_USER` | Usuario del panel |
+| `PANEL_PASSWORD_HASH` | bcrypt de la clave, en **base64**. Un hash `$2b$…` crudo lo rompe Compose. Si falta, `/cases` queda sin auth. Webhook y `/health` no piden login |
 
-**Unitarias (Jest)** — no necesitan Postgres; las dependencias externas están mockeadas:
-
-```bash
-cd apps/api
-npm ci
-npm test
-```
-
-Cubren clasificación de intención, apertura de casos / reclamos e idempotencia del webhook (`MessageSid` repetido).
-
-**End-to-end (Playwright)** — el flujo del panel: llega un reclamo por el webhook, aparece en la lista, sobrevive el filtro `ABIERTO` y se ve el hilo.
-
-Hace falta Postgres arriba y el hash de la contraseña `panel` en `.env` (o `PANEL_USER` / `PANEL_PASSWORD` en el entorno del test). Playwright levanta API y web si no están corriendo.
+Otra contraseña, desde `apps/api` después de `npm ci` (usá la línea base64 en `.env`):
 
 ```bash
-cd apps/web
-npm ci
-npx playwright install chromium
-npm run test:e2e
+node -e "const bcrypt=require('bcryptjs'); const h=bcrypt.hashSync('tu-clave', 10); console.log(h); console.log(Buffer.from(h).toString('base64'))"
 ```
-
-## Probar el bot sin Twilio
-
-El webhook acepta el mismo POST form-encoded que Twilio (`From`, `Body`, `MessageSid`):
-
-```bash
-curl -s -X POST http://localhost:8080/webhook/whatsapp \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  --data-urlencode 'From=whatsapp:+50370000000' \
-  --data-urlencode 'Body=quiero poner un reclamo' \
-  --data-urlencode 'MessageSid=SM-prueba-1'
-```
-
-Con `MESSAGING_DRIVER=db` la respuesta queda guardada en el caso y se ve en el panel. El mismo `MessageSid` una segunda vez no duplica el hilo ni vuelve a responder.
 
 ## Twilio (opcional)
 
-No es requisito. Si lo usás: `MESSAGING_DRIVER=twilio` y las credenciales. Es otra implementación de la misma interfaz de mensajería; el webhook no cambia.
+No hace falta para evaluar el prototipo. Si lo usás: `MESSAGING_DRIVER=twilio` y las credenciales. El webhook sigue siendo el mismo.
 
-La cuenta de prueba de Twilio no deja mandar el texto libre que el bot arma (el body guardado en la base). Exige plantillas (`ContentSid`) y no acepta un `body` custom por la API REST. El fallback TwiML tampoco alcanza: Twilio no entrega ese XML como el mensaje de la base en WhatsApp. El saliente sí se persiste y se ve en el panel; el usuario de WhatsApp no recibe ese texto. Es una limitante de la versión de prueba, no del prototipo. El camino soportado para evaluar el bot es `MESSAGING_DRIVER=db` más `curl` o Playwright.
+La cuenta **trial** no envía el texto libre a WhatsApp (pide plantilla `ContentSid`; TwiML tampoco entrega el body). El mensaje sí queda en el panel. Camino soportado: `MESSAGING_DRIVER=db` + curl o Playwright.
 
 ## Estructura
 

@@ -23,14 +23,7 @@ const log = new Logger('MessagingModule');
         }
 
         if (driver === 'twilio') {
-          const contentSid = config.get<string>('TWILIO_CONTENT_SID')?.trim();
-          if (!contentSid) {
-            log.warn(
-              'TWILIO_CONTENT_SID is empty. Replies are saved in the panel but not sent to WhatsApp. Trial accounts cannot create templates via API; copy an HX… SID from a message log if you have a usable template.',
-            );
-            return new DbMessagingAdapter(prisma);
-          }
-
+          log.log('Outbound replies will be sent through Twilio WhatsApp.');
           return new TwilioMessagingAdapter(
             twilio(
               required(config, 'TWILIO_ACCOUNT_SID'),
@@ -38,7 +31,6 @@ const log = new Logger('MessagingModule');
             ),
             prisma,
             required(config, 'TWILIO_WHATSAPP_FROM'),
-            contentSid,
           );
         }
 

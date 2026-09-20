@@ -1,0 +1,14 @@
+node_modules
+.next
+coverage
+e2e
+playwright-report
+test-results
+playwright.config.ts
+.env
+.env.*
+!.env.example
+.git
+*.md
+.idea
+.vscode

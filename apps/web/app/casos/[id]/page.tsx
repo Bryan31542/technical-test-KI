@@ -1,4 +1,5 @@
 import { CaseDetailView } from "@/components/case-detail";
+import { RequireAuth } from "@/components/require-auth";
 
 export default async function CasePage({
   params,
@@ -6,5 +7,9 @@ export default async function CasePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <CaseDetailView id={id} />;
+  return (
+    <RequireAuth>
+      <CaseDetailView id={id} />
+    </RequireAuth>
+  );
 }

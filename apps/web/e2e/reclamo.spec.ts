@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 const API_URL = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:8080";
+const PANEL_USER = process.env.PANEL_USER ?? "panel";
+const PANEL_PASSWORD = process.env.PANEL_PASSWORD ?? "panel";
 
 function uniquePhone() {
   const local = `8${Date.now().toString().slice(-7)}`;
@@ -32,7 +34,11 @@ test("a reclamo appears in the list, survives the ABIERTO filter, and shows its 
     intent: "RECLAMO",
   });
 
-  await page.goto("/");
+  await page.goto("/login");
+  await page.getByTestId("login-user").fill(PANEL_USER);
+  await page.getByTestId("login-password").fill(PANEL_PASSWORD);
+  await page.getByTestId("login-submit").click();
+  await expect(page.getByRole("heading", { name: "Casos" })).toBeVisible();
   await expect(page.getByTestId("cases-loading")).toBeHidden();
 
   const caseLink = page.getByRole("link", { name: display });

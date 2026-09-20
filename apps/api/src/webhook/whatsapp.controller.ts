@@ -5,8 +5,11 @@ import {
   HttpCode,
   Inject,
   Post,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { WhatsAppWebhookService } from './whatsapp-webhook.service';
+import { toTwimlMessage } from './twiml';
 
 type TwilioWhatsAppPayload = {
   From?: string;
@@ -23,7 +26,10 @@ export class WhatsAppWebhookController {
 
   @Post('whatsapp')
   @HttpCode(200)
-  async whatsapp(@Body() payload: TwilioWhatsAppPayload) {
+  async whatsapp(
+    @Body() payload: TwilioWhatsAppPayload,
+    @Res() res: Response,
+  ) {
     const from = payload.From?.trim();
     const messageSid = payload.MessageSid?.trim();
 
@@ -37,6 +43,15 @@ export class WhatsAppWebhookController {
       messageSid,
     });
 
-    return { ok: true, ...result };
+    if (result.replyViaTwiml && result.reply) {
+      res.status(200);
+      res.setHeader('Content-Type', 'text/xml');
+      res.send(toTwimlMessage(result.reply));
+      return;
+    }
+
+    const { replyViaTwiml, ...publicResult } = result;
+    void replyViaTwiml;
+    res.status(200).json({ ok: true, ...publicResult });
   }
 }

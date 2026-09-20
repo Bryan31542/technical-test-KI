@@ -5,6 +5,7 @@ import type {
   RecordInboundResult,
 } from '../cases/record-inbound';
 import type { SendMessageInput } from '../messaging/messaging.port';
+import { isReplyViaTwimlError } from '../messaging/reply-via-twiml';
 import { buildReply } from './build-reply';
 
 export type WhatsAppInbound = {
@@ -24,6 +25,7 @@ export type WhatsAppHandlerDeps = {
 export type WhatsAppHandlerResult = {
   duplicated: boolean;
   sendFailed: boolean;
+  replyViaTwiml?: boolean;
   intent: DetectedIntent;
   reply?: string;
 };
@@ -53,7 +55,16 @@ export async function handleWhatsAppInbound(
       caseId: recorded.case.id,
     });
     return { duplicated: false, sendFailed: false, intent, reply };
-  } catch {
+  } catch (error) {
+    if (isReplyViaTwimlError(error)) {
+      return {
+        duplicated: false,
+        sendFailed: false,
+        replyViaTwiml: true,
+        intent,
+        reply,
+      };
+    }
     return { duplicated: false, sendFailed: true, intent, reply };
   }
 }

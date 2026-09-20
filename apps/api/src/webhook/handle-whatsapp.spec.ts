@@ -1,5 +1,6 @@
 import { buildReply, MENU_REPLY, RECLAMO_REPLY } from './build-reply';
 import { handleWhatsAppInbound } from './handle-whatsapp';
+import { ReplyViaTwimlError } from '../messaging/reply-via-twiml';
 
 describe('buildReply', () => {
   it('confirms a reclamo without hitting the knowledge base', async () => {
@@ -76,6 +77,28 @@ describe('handleWhatsAppInbound', () => {
     });
     expect(send).toHaveBeenCalledTimes(1);
     expect(recordInbound).toHaveBeenCalledTimes(2);
+  });
+
+  it('asks the webhook to answer with TwiML when freeform send is blocked', async () => {
+    const recordInbound = jest.fn().mockResolvedValue({
+      duplicated: false,
+      contactId: 'contact-1',
+      case: openCase,
+    });
+    const send = jest.fn().mockRejectedValue(new ReplyViaTwimlError());
+
+    const result = await handleWhatsAppInbound(
+      { recordInbound, findKnowledge: jest.fn(), send },
+      inbound,
+    );
+
+    expect(result).toEqual({
+      duplicated: false,
+      sendFailed: false,
+      replyViaTwiml: true,
+      intent: 'RECLAMO',
+      reply: RECLAMO_REPLY,
+    });
   });
 
   it('keeps the inbound result when sending the reply fails', async () => {

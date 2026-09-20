@@ -5,6 +5,7 @@ import {
   type MessagingPort,
 } from '../messaging/messaging.port';
 import { PrismaService } from '../prisma/prisma.service';
+import { isReplyViaTwimlError } from '../messaging/reply-via-twiml';
 import {
   handleWhatsAppInbound,
   type WhatsAppInbound,
@@ -37,9 +38,17 @@ export class WhatsAppWebhookService {
           try {
             await this.messaging.send(input);
           } catch (error) {
+            if (isReplyViaTwimlError(error)) {
+              this.logger.warn(
+                'Twilio blocked freeform body; answering with TwiML.',
+              );
+              throw error;
+            }
             this.logger.error(
-              'Failed to send outbound WhatsApp reply',
-              error instanceof Error ? error.stack : String(error),
+              `Failed to send outbound WhatsApp reply: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+              error instanceof Error ? error.stack : undefined,
             );
             throw error;
           }

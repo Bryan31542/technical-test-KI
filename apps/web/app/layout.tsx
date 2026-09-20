@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { LogoutButton } from "@/components/logout-button";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="text-sm font-semibold tracking-tight">
               Universidad · Panel de casos
             </Link>
+            <LogoutButton />
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">

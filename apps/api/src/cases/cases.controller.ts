@@ -7,7 +7,9 @@ import {
   Param,
   Patch,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { BasicAuthGuard } from '../auth/basic-auth.guard';
 import { CasesService } from './cases.service';
 import { isCaseStatus } from './case-status';
 import type { CaseType } from './case-type';
@@ -17,6 +19,7 @@ type PatchCaseBody = {
 };
 
 @Controller('cases')
+@UseGuards(BasicAuthGuard)
 export class CasesController {
   constructor(@Inject(CasesService) private readonly cases: CasesService) {}
 

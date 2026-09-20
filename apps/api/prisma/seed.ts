@@ -1,10 +1,7 @@
-import path from 'node:path';
-import { config } from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { loadRootEnv } from '../src/load-root-env';
 
-// This file lives in apps/api/prisma, so ../.env is apps/api/.env
-// (the same file Prisma migrate loads).
-config({ path: path.resolve(__dirname, '../.env') });
+loadRootEnv();
 
 const prisma = new PrismaClient();
 

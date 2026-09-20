@@ -20,9 +20,10 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "prisma db seed",
-    "prisma:studio": "prisma studio"
+    "prisma:migrate": "npx tsx scripts/run-with-root-env.ts npx prisma migrate dev",
+    "prisma:deploy": "npx tsx scripts/run-with-root-env.ts npx prisma migrate deploy",
+    "prisma:seed": "npx tsx scripts/run-with-root-env.ts npx prisma db seed",
+    "prisma:studio": "npx tsx scripts/run-with-root-env.ts npx prisma studio"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

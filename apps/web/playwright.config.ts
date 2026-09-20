@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadRootEnv } from "./load-root-env";
+
+loadRootEnv();
 
 const WEB_URL = process.env.PLAYWRIGHT_WEB_URL ?? "http://localhost:3000";
 const API_URL = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:8080";

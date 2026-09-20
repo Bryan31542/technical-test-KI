@@ -67,7 +67,7 @@ El entrypoint de la API corre `prisma migrate deploy` y el seed de la base de co
 | `DATABASE_URL` | Opcional. Override de Prisma. En Docker se reconstruye hacia el host `postgres` |
 | `CORS_ORIGIN` | Origen del panel (`http://localhost:3000`) |
 | `API_PORT` / `WEB_PORT` | Puertos publicados por Compose |
-| `NEXT_PUBLIC_API_URL` | URL de la API que consume el panel. En la imagen del frontend se hornea en el build |
+| `NEXT_PUBLIC_API_URL` | URL de la API que consume el panel. Next solo copia del `.env` las claves `NEXT_PUBLIC_*`. En la imagen del frontend se hornea en el build |
 | `MESSAGING_DRIVER` | `db` (default): persiste el saliente y no llama a Twilio. `twilio`: segunda implementación del puerto |
 | `TWILIO_*` | Solo si `MESSAGING_DRIVER=twilio` |
 | `PANEL_USER` | Usuario HTTP Basic del panel. El webhook y `/health` no piden auth |

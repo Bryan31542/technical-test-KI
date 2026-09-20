@@ -36,6 +36,9 @@ export function loadRootEnv(): void {
       continue;
     }
     const key = line.slice(0, eq).trim();
+    if (!key.startsWith("NEXT_PUBLIC_")) {
+      continue;
+    }
     let value = line.slice(eq + 1).trim();
     if (
       (value.startsWith('"') && value.endsWith('"')) ||

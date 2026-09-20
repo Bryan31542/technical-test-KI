@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchCases } from "@/lib/cases-api";
 import { getErrorMessage } from "@/lib/api";
+import { usePoll } from "@/hooks/use-poll";
 import {
   formatDateTime,
   formatPhone,
@@ -15,6 +16,8 @@ import type { CaseListItem } from "@/lib/types";
 import { CaseFilters } from "./case-filters";
 import { StatusBadge } from "./status-badge";
 
+const POLL_MS = 4000;
+
 export function CaseList() {
   const type = useCaseFilters((state) => state.type);
   const status = useCaseFilters((state) => state.status);
@@ -22,37 +25,40 @@ export function CaseList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
+  const load = useCallback(
+    async (showSpinner: boolean) => {
+      if (showSpinner) {
+        setLoading(true);
+      }
       try {
         const rows = await fetchCases({ type, status });
-        if (!cancelled) {
-          setCases(rows);
-        }
+        setCases(rows);
+        setError(null);
       } catch (err) {
-        if (!cancelled) {
-          setError(getErrorMessage(err));
-        }
+        setError(getErrorMessage(err));
       } finally {
-        if (!cancelled) {
+        if (showSpinner) {
           setLoading(false);
         }
       }
-    }
+    },
+    [type, status],
+  );
 
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [type, status]);
+  useEffect(() => {
+    void load(true);
+  }, [load]);
+
+  usePoll(() => {
+    void load(false);
+  }, POLL_MS);
 
   return (
     <section className="space-y-6">
-      <CaseFilters />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <CaseFilters />
+        <p className="text-xs text-zinc-500">Se actualiza cada 4 segundos</p>
+      </div>
 
       {loading ? (
         <p className="text-sm text-zinc-500" data-testid="cases-loading">

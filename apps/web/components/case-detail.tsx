@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { fetchCase, updateCaseStatus } from "@/lib/cases-api";
 import { getErrorMessage } from "@/lib/api";
+import { usePoll } from "@/hooks/use-poll";
 import {
   formatDateTime,
   formatPhone,
@@ -15,39 +16,54 @@ import {
 import type { CaseDetail, CaseStatus } from "@/lib/types";
 import { StatusBadge } from "./status-badge";
 
+const POLL_MS = 4000;
+
 export function CaseDetailView({ id }: { id: string }) {
   const [detail, setDetail] = useState<CaseDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const threadRef = useRef<HTMLOListElement>(null);
+  const messageCountRef = useRef(0);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
+  const load = useCallback(
+    async (showSpinner: boolean) => {
+      if (showSpinner) {
+        setLoading(true);
+      }
       try {
         const row = await fetchCase(id);
-        if (!cancelled) {
-          setDetail(row);
-        }
+        setDetail(row);
+        setError(null);
       } catch (err) {
-        if (!cancelled) {
-          setError(getErrorMessage(err));
-        }
+        setError(getErrorMessage(err));
       } finally {
-        if (!cancelled) {
+        if (showSpinner) {
           setLoading(false);
         }
       }
-    }
+    },
+    [id],
+  );
 
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  useEffect(() => {
+    void load(true);
+  }, [load]);
+
+  usePoll(() => {
+    void load(false);
+  }, POLL_MS);
+
+  useEffect(() => {
+    const count = detail?.messages.length ?? 0;
+    if (count > messageCountRef.current) {
+      threadRef.current?.scrollTo({
+        top: threadRef.current.scrollHeight,
+        behavior: messageCountRef.current === 0 ? "auto" : "smooth",
+      });
+    }
+    messageCountRef.current = count;
+  }, [detail]);
 
   async function onStatusChange(status: CaseStatus) {
     if (!detail) {
@@ -89,12 +105,15 @@ export function CaseDetailView({ id }: { id: string }) {
 
   return (
     <div className="space-y-8">
-      <Link
-        href="/"
-        className="text-sm text-zinc-600 hover:text-zinc-900 hover:underline"
-      >
-        ← Volver al listado
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/"
+          className="text-sm text-zinc-600 hover:text-zinc-900 hover:underline"
+        >
+          ← Volver al listado
+        </Link>
+        <p className="text-xs text-zinc-500">Se actualiza cada 4 segundos</p>
+      </div>
 
       {error ? (
         <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -141,28 +160,46 @@ export function CaseDetailView({ id }: { id: string }) {
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-zinc-700">Hilo de mensajes</h2>
-        <ol className="space-y-3" data-testid="case-thread">
-          {detail.messages.map((message) => {
-            const inbound = message.direction === "INBOUND";
-            return (
-              <li
-                key={message.id}
-                className={`rounded-lg border px-4 py-3 ${
-                  inbound
-                    ? "border-zinc-200 bg-white"
-                    : "border-zinc-900/10 bg-zinc-50"
-                }`}
-              >
-                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  {inbound ? "Entrante" : "Saliente"} ·{" "}
-                  {formatDateTime(message.createdAt)}
-                </p>
-                <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-800">
-                  {message.body}
-                </p>
-              </li>
-            );
-          })}
+        <ol
+          ref={threadRef}
+          data-testid="case-thread"
+          className="flex max-h-[28rem] flex-col gap-2 overflow-y-auto rounded-xl border border-zinc-200 bg-zinc-100 p-4"
+        >
+          {detail.messages.length === 0 ? (
+            <li className="py-8 text-center text-sm text-zinc-500">
+              Aún no hay mensajes en este caso.
+            </li>
+          ) : (
+            detail.messages.map((message) => {
+              const inbound = message.direction === "INBOUND";
+              return (
+                <li
+                  key={message.id}
+                  className={`flex ${inbound ? "justify-start" : "justify-end"}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-3.5 py-2 shadow-sm ${
+                      inbound
+                        ? "rounded-bl-md bg-white text-zinc-900"
+                        : "rounded-br-md bg-emerald-700 text-white"
+                    }`}
+                  >
+                    <p
+                      className={`text-[11px] font-medium uppercase tracking-wide ${
+                        inbound ? "text-zinc-500" : "text-emerald-100"
+                      }`}
+                    >
+                      {inbound ? "Entrante" : "Saliente"} ·{" "}
+                      {formatDateTime(message.createdAt)}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-5">
+                      {message.body}
+                    </p>
+                  </div>
+                </li>
+              );
+            })
+          )}
         </ol>
       </section>
     </div>

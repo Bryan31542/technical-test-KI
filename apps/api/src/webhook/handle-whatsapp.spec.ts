@@ -67,6 +67,7 @@ describe('handleWhatsAppInbound', () => {
       duplicated: false,
       sendFailed: false,
       intent: 'RECLAMO',
+      reply: RECLAMO_REPLY,
     });
     expect(second).toEqual({
       duplicated: true,
@@ -94,6 +95,7 @@ describe('handleWhatsAppInbound', () => {
       duplicated: false,
       sendFailed: true,
       intent: 'RECLAMO',
+      reply: RECLAMO_REPLY,
     });
     expect(recordInbound).toHaveBeenCalled();
   });

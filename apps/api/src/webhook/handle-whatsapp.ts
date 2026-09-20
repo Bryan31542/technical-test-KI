@@ -25,6 +25,7 @@ export type WhatsAppHandlerResult = {
   duplicated: boolean;
   sendFailed: boolean;
   intent: DetectedIntent;
+  reply?: string;
 };
 
 export async function handleWhatsAppInbound(
@@ -51,8 +52,8 @@ export async function handleWhatsAppInbound(
       body: reply,
       caseId: recorded.case.id,
     });
-    return { duplicated: false, sendFailed: false, intent };
+    return { duplicated: false, sendFailed: false, intent, reply };
   } catch {
-    return { duplicated: false, sendFailed: true, intent };
+    return { duplicated: false, sendFailed: true, intent, reply };
   }
 }

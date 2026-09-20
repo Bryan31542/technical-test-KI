@@ -5,7 +5,7 @@ export type OutboundDb = {
         caseId: string;
         direction: 'OUTBOUND';
         body: string;
-        providerSid: null;
+        providerSid: string | null;
       };
     }) => Promise<unknown>;
   };
@@ -13,14 +13,14 @@ export type OutboundDb = {
 
 export async function sendOutboundToDb(
   db: OutboundDb,
-  input: { caseId: string; body: string },
+  input: { caseId: string; body: string; providerSid?: string | null },
 ): Promise<void> {
   await db.message.create({
     data: {
       caseId: input.caseId,
       direction: 'OUTBOUND',
       body: input.body,
-      providerSid: null,
+      providerSid: input.providerSid ?? null,
     },
   });
 }

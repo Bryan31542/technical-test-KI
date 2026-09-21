@@ -1,0 +1,2 @@
+# Shell scripts must stay LF or Alpine reports: exec ./docker-entrypoint.sh: no such file or directory
+*.sh text eol=lf

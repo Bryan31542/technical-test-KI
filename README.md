@@ -59,6 +59,8 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
+Para verlo: `npx playwright test --headed` abre el navegador; `npx playwright test --ui` abre el runner interactivo.
+
 Cubre: llega un reclamo por el webhook → se ve en la lista → sigue visible con filtro `ABIERTO` → el detalle muestra el hilo.
 
 ## Desarrollo local (opcional)

@@ -35,11 +35,7 @@ Si 3000, 8080 o 5432 están ocupados, cambiá `WEB_PORT`, `API_PORT` o `POSTGRES
 Con el stack arriba:
 
 ```bash
-curl -s -X POST http://localhost:8080/webhook/whatsapp \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  --data-urlencode 'From=whatsapp:+50370000000' \
-  --data-urlencode 'Body=quiero poner un reclamo' \
-  --data-urlencode 'MessageSid=SM-prueba-1'
+curl -s -X POST "http://localhost:8080/webhook/whatsapp" ` -H "Content-Type: application/x-www-form-urlencoded" ` --data-urlencode "From=whatsapp:+50370000000" ` --data-urlencode "Body=quiero poner un reclamo" ` --data-urlencode "MessageSid=SM-prueba-1"
 ```
 
 El reclamo aparece en el panel. El mismo `MessageSid` otra vez no duplica el hilo.
